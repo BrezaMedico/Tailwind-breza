@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tugas SAAS - React & Tailwind CDN</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { createContext, useContext, useState, useReducer, useEffect } = React;
+
+    // 1. TEMA GLOBAL (Context API)
+    const ThemeContext = createContext();
+
+    const ThemeProvider = ({ children }) => {
+      const [theme, setTheme] = useState('light');
+
+      const toggleTheme = () => {
+        setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+      };
+
+      useEffect(() => {
+        const rootElement = document.documentElement;
+        if (theme === 'dark') {
+          rootElement.classList.add('dark');
+        } else {
+          rootElement.classList.remove('dark');
+        }
+      }, [theme]);
+
+      return (
+        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+          {children}
+        </ThemeContext.Provider>
+      );
+    };
+
+    const useTheme = () => useContext(ThemeContext);
+
+    // 2. STATE GLOBAL PENGGUNA (Context API)
+    const AuthContext = createContext();
+
+    const AuthProvider = ({ children }) => {
+      const [user, setUser] = useState(null);
+
+      const login = (name, role) => {
+        setUser({ name, role });
+      };
+
+      const logout = () => {
+        setUser(null);
+      };
+
+      return (
+        <AuthContext.Provider value={{ user, login, logout }}>
+          {children}
+        </AuthContext.Provider>
+      );
+    };
+
+    const useAuth = () => useContext(AuthContext);
+
+    // 3. COUNTER DENGAN CONTEXT DAN REDUCER
+    const CounterContext = createContext();
+
+    const counterReducer = (state, action) => {
+      switch (action.type) {
+        case 'INCREMENT':
+          return { count: state.count + 1 };
+        case 'DECREMENT':
+          return { count: state.count - 1 };
+        case 'RESET':
+          return { count: 0 };
+        default:
+          return state;
+      }
+    };
+
+    const CounterProvider = ({ children }) => {
+      const [state, dispatch] = useReducer(counterReducer, { count: 0 });
+
+      return (
+        <CounterContext.Provider value={{ count: state.count, dispatch }}>
+          {children}
+        </CounterContext.Provider>
+      );
+    };
+
+    const useCounter = () => useContext(CounterContext);
+
+    // KOMPONEN: Header / Navbar
+    const Navbar = () => {
+      const { theme, toggleTheme } = useTheme();
+      const { user } = useAuth();
+
+      return (
+        <header className="bg-white dark:bg-gray-800 shadow-md px-6 py-4 flex justify-between items-center transition-colors">
+          <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+            Dashboard Aplikasi
+          </h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600 dark:text-gray-300">
+              {user ? `Login sebagai: ${user.name}` : 'Belum masuk'}
+            </span>
+            <button
+              onClick={toggleTheme}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:opacity-80 transition"
+            >
+              Mode: {theme === 'light' ? 'Terang' : 'Gelap'}
+            </button>
+          </div>
+        </header>
+      );
+    };
+
+    // KOMPONEN: Panel Pengguna
+    const UserProfileSection = () => {
+      const { user, login, logout } = useAuth();
+      const [inputName, setInputName] = useState('');
+      const [inputRole, setInputRole] = useState('Administrator');
+
+      const handleLoginSubmit = (e) => {
+        e.preventDefault();
+        if (!inputName.trim()) return;
+        login(inputName, inputRole);
+        setInputName('');
+      };
+
+      return (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md transition-colors">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            Status Autentikasi Pengguna
+          </h2>
+          {user ? (
+            <div className="space-y-3">
+              <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800">
+                <p className="text-gray-700 dark:text-gray-200">
+                  <span className="font-semibold">Nama:</span> {user.name}
+                </p>
+                <p className="text-gray-700 dark:text-gray-200">
+                  <span className="font-semibold">Peran:</span> {user.role}
+                </p>
+              </div>
+              <button
+                onClick={logout}
+                className="w-full py-2 px-4 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg transition"
+              >
+                Keluar Akun
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">
+                  Nama
+                </label>
+                <input
+                  type="text"
+                  value={inputName}
+                  onChange={(e) => setInputName(e.target.value)}
+                  placeholder="Masukkan nama Anda"
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">
+                  Peran Akun
+                </label>
+                <select
+                  value={inputRole}
+                  onChange={(e) => setInputRole(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Administrator">Administrator</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Tamu">Tamu</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+              >
+                Masuk
+              </button>
+            </form>
+          )}
+        </div>
+      );
+    };
+
+    // KOMPONEN: Panel Counter
+    const CounterSection = () => {
+      const { count, dispatch } = useCounter();
+
+      return (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md transition-colors text-center">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+            Penghitung Global
+          </h2>
+          <div className="my-6">
+            <span className="text-5xl font-extrabold text-blue-600 dark:text-blue-400">
+              {count}
+            </span>
+          </div>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => dispatch({ type: 'DECREMENT' })}
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-medium rounded-lg transition"
+            >
+              Kurang
+            </button>
+            <button
+              onClick={() => dispatch({ type: 'RESET' })}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg transition"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => dispatch({ type: 'INCREMENT' })}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition"
+            >
+              Tambah
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // KOMPONEN UTAMA
+    const App = () => {
+      return (
+        <ThemeProvider>
+          <AuthProvider>
+            <CounterProvider>
+              <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main className="flex-1 max-w-4xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                  <UserProfileSection />
+                  <CounterSection />
+                </main>
+              </div>
+            </CounterProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
